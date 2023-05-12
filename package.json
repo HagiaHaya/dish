@@ -20,7 +20,7 @@
     "@emotion/react": "latest",
     "@emotion/styled": "latest",
     "yup": "latest",
-    "@fontsource/roboto": "latest"
+    "@mui/icons-material": "latest"
   },
   "scripts": {
     "start": "react-scripts start",

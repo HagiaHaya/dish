@@ -9,6 +9,7 @@ import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import FormHelperText from '@mui/material/FormHelperText';
+import RamenDining from '@mui/icons-material/RamenDining';
 import * as yup from 'yup';
 
 const darkTheme = createTheme({
@@ -20,49 +21,59 @@ const darkTheme = createTheme({
 interface Dish {
     name: string;
     preparation_time: string;
+    dish_type: 'pizza' | 'soup' | 'sandwich' | '';
+    no_of_slices?: number;
+    diameter?: number;
+    spiciness_scale?: number;
+    slices_of_bread?: number;
 }
 
-interface Pizza extends Dish {
-    dish_type: 'pizza';
-    no_of_slices: number;
-    diameter: number;
-}
-
-interface Soup extends Dish {
-    dish_type: 'soup';
-    spiciness_scale: number;
-}
-
-interface Sandwich extends Dish {
-    dish_type: 'sandwich';
-    slices_of_bread: number;
-}
-
-interface Default extends Dish {
-    dish_type: '';
-}
-
-type DishFormValues = Pizza | Soup | Sandwich | Default;
-
-const initialValues: Dish & Partial<DishFormValues> = {
-    name: '', preparation_time: '', dish_type: '',
+const initialValues: Dish = {
+    name: '',
+    preparation_time: '',
+    dish_type: '',
+    no_of_slices: undefined,
+    diameter: undefined,
+    spiciness_scale: undefined,
+    slices_of_bread: undefined,
 };
+
 
 const validationSchema = yup.object().shape({
     name: yup.string().required('Required'),
     preparation_time: yup.string().required('Required'),
     dish_type: yup.string().required('Required'),
-    no_of_slices: yup.number(),
-    diameter: yup.number(),
-    spiciness_scale: yup.number(),
-    slices_of_bread: yup.number(),
+    no_of_slices: yup.number().when('dish_type', (values) => {
+        if (values[0] === 'pizza') {
+            return yup.number().required('Required').min(1, 'Minimum 1 slice');
+        }
+        return yup.number();
+    }),
+    diameter: yup.number().when('dish_type', (values) => {
+        if (values[0] === 'pizza') {
+            return yup.number().required('Required').min(1, 'Minimum 1 diameter');
+        }
+        return yup.number();
+    }),
+    spiciness_scale: yup.number().when('dish_type', (values) => {
+        if (values[0] === 'soup') {
+            return yup.number().required('Required').min(1, 'Minimum 1 spiciness scale').max(10, 'Maximum 10 spiciness scale');
+        }
+        return yup.number();
+    }),
+    slices_of_bread: yup.number().when('dish_type', (values) => {
+        if (values[0] === 'sandwich') {
+            return yup.number().required('Required').min(1, 'Minimum 1 slices of bread');
+        }
+        return yup.number();
+    }),
 });
 
 
 function App() {
-    const formik = useFormik<Dish & Partial<DishFormValues>>({
+    const formik = useFormik<Dish>({
         initialValues, validationSchema: validationSchema, onSubmit: (values) => {
-            let output: DishFormValues;
+            let output: Dish;
 
             switch (values.dish_type) {
                 case 'pizza':
@@ -70,25 +81,25 @@ function App() {
                         name: values.name,
                         preparation_time: values.preparation_time,
                         dish_type: 'pizza',
-                        no_of_slices: values.no_of_slices!,
-                        diameter: values.diameter!
-                    } as Pizza;
+                        no_of_slices: values.no_of_slices,
+                        diameter: values.diameter,
+                    };
                     break;
                 case 'soup':
                     output = {
                         name: values.name,
                         preparation_time: values.preparation_time,
                         dish_type: 'soup',
-                        spiciness_scale: values.spiciness_scale!
-                    } as Soup;
+                        spiciness_scale: values.spiciness_scale,
+                    };
                     break;
                 case 'sandwich':
                     output = {
                         name: values.name,
                         preparation_time: values.preparation_time,
                         dish_type: 'sandwich',
-                        slices_of_bread: values.slices_of_bread!
-                    } as Sandwich;
+                        slices_of_bread: values.slices_of_bread,
+                    };
                     break;
                 default:
                     throw new Error("Invalid dish type");
@@ -97,9 +108,11 @@ function App() {
             alert(JSON.stringify(output, null, 2));
         }
     });
+
     return (<ThemeProvider theme={darkTheme}>
         <div className="App">
-            <h1>DishChooser</h1>
+
+            <h1><RamenDining fontSize={"large"}/> DishChooser</h1>
             <form onSubmit={formik.handleSubmit} className="form">
                 <TextField fullWidth={true} id="name" name="name" label="Dish name" type="text"
                            onChange={formik.handleChange} margin="dense" value={formik.values.name}
@@ -133,28 +146,46 @@ function App() {
                                name="no_of_slices" label="No of slices"
                                type="number" onChange={formik.handleChange}
                                margin="dense"
-                               value={formik.values.no_of_slices}/>
+                               value={formik.values.no_of_slices}
+                               error={formik.touched.no_of_slices && Boolean(formik.errors.no_of_slices)}
+
+                    />
                     <TextField
                         fullWidth={true} id="diameter"
                         name="diameter" label="Diameter"
                         type="number"
                         onChange={formik.handleChange}
                         margin="dense"
-                        value={formik.values.diameter}/>
+                        value={formik.values.diameter}
+                        error={formik.touched.diameter && Boolean(formik.errors.diameter)}/>
                 </>) : null}
                 {formik.values.dish_type === 'soup' ? (
                     <TextField fullWidth={true} id="spiciness_scale" name="spiciness_scale" label="Spiciness scale"
                                type="number" onChange={formik.handleChange} margin="dense"
-                               value={formik.values.spiciness_scale}/>) : null}
+                               value={formik.values.spiciness_scale}
+                               error={formik.touched.spiciness_scale && Boolean(formik.errors.spiciness_scale)}
+                    />) : null}
                 {formik.values.dish_type === 'sandwich' ? (
                     <TextField fullWidth={true} id="slices_of_bread" name="slices_of_bread" label="Slices of bread"
                                type="number" onChange={formik.handleChange} margin="dense"
-                               value={formik.values.slices_of_bread}/>) : null}
+                               value={formik.values.slices_of_bread}
+                               error={formik.touched.slices_of_bread && Boolean(formik.errors.slices_of_bread)}
+                    />) : null}
                 <Button type="submit" fullWidth={true} variant={"outlined"}>Submit</Button>
                 <FormHelperText error className='helper'>
                     {formik.touched.name && formik.errors.name ? <p>Dish name: {formik.errors.name}</p> : null}
-                    {formik.touched.preparation_time && formik.errors.preparation_time ? <p>Preparation time: {formik.errors.preparation_time}</p> : null}
-                    {formik.touched.dish_type && formik.errors.dish_type ? <p>Dish type: {formik.errors.dish_type}</p> : null}
+                    {formik.touched.preparation_time && formik.errors.preparation_time ?
+                        <p>Preparation time: {formik.errors.preparation_time}</p> : null}
+                    {formik.touched.dish_type && formik.errors.dish_type ?
+                        <p>Dish type: {formik.errors.dish_type}</p> : null}
+                    {formik.touched.no_of_slices && formik.errors.no_of_slices && formik.values.dish_type === 'pizza' ?
+                        <p>No of slices: {formik.errors.no_of_slices}</p> : null}
+                    {formik.touched.diameter && formik.errors.diameter && formik.values.dish_type === 'pizza' ?
+                        <p>Diameter: {formik.errors.diameter}</p> : null}
+                    {formik.touched.spiciness_scale && formik.errors.spiciness_scale && formik.values.dish_type === 'soup' ?
+                        <p>Spiciness scale: {formik.errors.spiciness_scale}</p> : null}
+                    {formik.touched.slices_of_bread && formik.errors.slices_of_bread && formik.values.dish_type === 'sandwich' ?
+                        <p>Slices of bread: {formik.errors.slices_of_bread}</p> : null}
                 </FormHelperText>
 
             </form>
